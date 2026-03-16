@@ -5,6 +5,16 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from django.views.decorators.csrf import csrf_exempt
+from django.http import HttpResponse
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def create_admin(request):
+    """Temporary tool to create an admin account on Render Free Tier"""
+    if not User.objects.filter(username="admin").exists():
+        User.objects.create_superuser("admin", "admin@example.com", "AdminPass123")
+        return HttpResponse("<h1>Success!</h1><p>Admin account created.</p><ul><li><b>User:</b> admin</li><li><b>Pass:</b> AdminPass123</li></ul><p><a href='/admin/'>Go to Login</a></p>")
+    return HttpResponse("Admin already exists. <a href='/admin/'>Go to Login</a>")
 
 @csrf_exempt
 @api_view(["POST"])
@@ -44,7 +54,7 @@ def user_login(request):
         user = authenticate(username=username, password=password)
 
         if user:
-            login(request, user)
+            # login(request, user) # Disable session login for now to avoid CSRF issues
             token, created = Token.objects.get_or_create(user=user)
             return Response({
                 "message": "Login success", 

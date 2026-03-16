@@ -6,15 +6,23 @@ from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
+from django.db import connection
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def create_admin(request):
-    """Temporary tool to create an admin account on Render Free Tier"""
+    """Temporary tool to create an admin account and check DB status"""
+    db_engine = connection.vendor
+    status_msg = f"<h1>Database Status: {db_engine}</h1>"
+    
     if not User.objects.filter(username="admin").exists():
         User.objects.create_superuser("admin", "admin@example.com", "AdminPass123")
-        return HttpResponse("<h1>Success!</h1><p>Admin account created.</p><ul><li><b>User:</b> admin</li><li><b>Pass:</b> AdminPass123</li></ul><p><a href='/admin/'>Go to Login</a></p>")
-    return HttpResponse("Admin already exists. <a href='/admin/'>Go to Login</a>")
+        status_msg += "<p><b>Success!</b> Admin account created.</p><ul><li><b>User:</b> admin</li><li><b>Pass:</b> AdminPass123</li></ul>"
+    else:
+        status_msg += "<p>Admin already exists.</p>"
+        
+    status_msg += f"<p><a href='/admin/'>Go to Login</a></p>"
+    return HttpResponse(status_msg)
 
 @csrf_exempt
 @api_view(["POST"])
@@ -54,7 +62,6 @@ def user_login(request):
         user = authenticate(username=username, password=password)
 
         if user:
-            # login(request, user) # Disable session login for now to avoid CSRF issues
             token, created = Token.objects.get_or_create(user=user)
             return Response({
                 "message": "Login success", 
